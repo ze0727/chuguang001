@@ -2,27 +2,55 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Play, X } from 'lucide-react';
 
-const videos = [
+// 视频列表：支持本地视频、B站、抖音、YouTube 四种类型
+// type: 'local'    → 本地视频，src 填 /video/xxx.mp4
+// type: 'bilibili' → B站视频，src 填 BV号（如 BV1xx411c7mD）
+// type: 'youtube'  → YouTube视频，src 填视频ID（如 cRbEmlU28vY）
+// type: 'douyin'   → 抖音视频，src 填分享链接中的 video ID
+const videos = [{
+  title: '三角洲高校赛校内晋级赛',
+  cover: 'logo.png',
+  type: 'douyin',
+  src: 'https://v.douyin.com/cRbEmlU28vY/',
+},
   {
     title: '仿无畏契约',
     cover: 'logo.png',
+    type: 'local',
     src: '/video/video1.mp4',
   },
   {
     title: '我的世界',
     cover: 'logo.png',
+    type: 'local',
     src: '/video/video2.mp4',
   },
   {
     title: '仿三角洲登录',
     cover: 'logo.png',
+    type: 'local',
     src: '/video/video3.mp4',
   },
   {
     title: '2025迎新赛',
     cover: 'logo.png',
+    type: 'local',
     src: '/video/video6.mp4',
   },
+  // B站示例（把 BV号 填到 src 里即可）：
+  // {
+  //   title: '无畏契约精彩集锦',
+  //   cover: 'logo.png',
+  //   type: 'bilibili',
+  //   src: 'BV1xx411c7mD',
+  // },
+  // 抖音示例（把视频ID填到 src 里即可）：
+  // {
+  //   title: '王从天降',
+  //   cover: 'logo.png',
+  //   type: 'douyin',
+  //   src: '7234567890123456789',
+  // },
 ];
 
 const container = {
@@ -45,12 +73,37 @@ function formatDuration(seconds) {
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
-// 单个视频卡片，自动读取视频时长
-function VideoCard({ video, index, onPlay }) {
+// 获取嵌入链接
+function getEmbedUrl(video) {
+  if (video.type === 'bilibili') {
+    return `https://player.bilibili.com/player.html?bvid=${video.src}&high_quality=1&autoplay=1`;
+  }
+  if (video.type === 'youtube') {
+    return `https://www.youtube.com/embed/${video.src}?autoplay=1&rel=0`;
+  }
+  return null;
+}
+
+// 平台标签
+function getPlatformLabel(type) {
+  if (type === 'bilibili') return 'B站';
+  if (type === 'youtube') return 'YouTube';
+  if (type === 'douyin') return '抖音';
+  return null;
+}
+
+// 单个视频卡片
+function VideoCard({ video, onPlay }) {
   const [duration, setDuration] = useState('--:--');
   const videoRef = useRef(null);
 
   useEffect(() => {
+    // 仅本地视频可自动读取时长
+    if (video.type !== 'local') {
+      setDuration(getPlatformLabel(video.type));
+      return;
+    }
+
     const v = videoRef.current;
     if (!v) return;
 
@@ -60,7 +113,7 @@ function VideoCard({ video, index, onPlay }) {
 
     v.addEventListener('loadedmetadata', handleLoadedMetadata);
     return () => v.removeEventListener('loadedmetadata', handleLoadedMetadata);
-  }, []);
+  }, [video]);
 
   return (
     <motion.div
@@ -68,8 +121,10 @@ function VideoCard({ video, index, onPlay }) {
       className="group relative overflow-hidden rounded-xl bg-dark-card border border-dark-border card-hover cursor-pointer"
       onClick={() => onPlay(video)}
     >
-      {/* 隐藏的 video 元素，仅用于读取时长 */}
-      <video ref={videoRef} src={video.src} preload="metadata" className="hidden" />
+      {/* 本地视频隐藏元素，用于读取时长 */}
+      {video.type === 'local' && (
+        <video ref={videoRef} src={video.src} preload="metadata" className="hidden" />
+      )}
 
       <div className="relative aspect-video overflow-hidden">
         <img
@@ -138,7 +193,7 @@ export default function VideoShowcase() {
           className="grid grid-cols-1 md:grid-cols-2 gap-6"
         >
           {videos.map((video, index) => (
-            <VideoCard key={index} video={video} index={index} onPlay={setActiveVideo} />
+            <VideoCard key={index} video={video} onPlay={setActiveVideo} />
           ))}
         </motion.div>
       </div>
@@ -159,14 +214,43 @@ export default function VideoShowcase() {
               <X size={32} />
             </button>
             <div className="relative aspect-video bg-black rounded-xl overflow-hidden border border-dark-border">
-              <video
-                autoPlay
-                controls
-                className="w-full h-full"
-                src={activeVideo.src}
-              >
-                您的浏览器不支持视频播放
-              </video>
+              {/* 本地视频 */}
+              {activeVideo.type === 'local' && (
+                <video
+                  autoPlay
+                  controls
+                  className="w-full h-full"
+                  src={activeVideo.src}
+                >
+                  您的浏览器不支持视频播放
+                </video>
+              )}
+              {/* B站 / YouTube 嵌入 */}
+              {(activeVideo.type === 'bilibili' || activeVideo.type === 'youtube') && (
+                <iframe
+                  src={getEmbedUrl(activeVideo)}
+                  className="w-full h-full"
+                  scrolling="no"
+                  border="0"
+                  frameBorder="0"
+                  allowFullScreen
+                  allow="autoplay; fullscreen; encrypted-media"
+                />
+              )}
+              {/* 抖音视频：跳转播放 */}
+              {activeVideo.type === 'douyin' && (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-6">
+                  <p className="text-text-secondary text-lg">抖音视频不支持站内播放</p>
+                  <a
+                    href={activeVideo.src}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-primary text-base"
+                  >
+                    打开抖音观看
+                  </a>
+                </div>
+              )}
             </div>
             <h3 className="text-center text-xl font-semibold mt-6">{activeVideo.title}</h3>
           </div>
