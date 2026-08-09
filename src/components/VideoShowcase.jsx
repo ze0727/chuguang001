@@ -19,16 +19,6 @@ const videos = [
     src: '/video/video3.mp4',
   },
   {
-    title: '无畏契约',
-    cover: 'logo.png',
-    src: '/video/video4.mp4',
-  },
-  {
-    title: '王从天降',
-    cover: 'logo.png',
-    src: '/video/video5.mp4',
-  },
-  {
     title: '2025迎新赛',
     cover: 'logo.png',
     src: '/video/video6.mp4',
