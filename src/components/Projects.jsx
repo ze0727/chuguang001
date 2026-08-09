@@ -6,7 +6,7 @@ const projects = [
     title: '王者荣耀高校联赛',
     category: 'MOBA 赛事',
     desc: '组建校队征战王者荣耀高校联赛，展现团队协作与战术博弈的巅峰对决。',
-    image: '/wzry.png',
+    image: '/wzry1.jpg',
     featured: true,
   },
   {
